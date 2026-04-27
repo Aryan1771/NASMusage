@@ -1,53 +1,119 @@
-# NASM Usage
+# NASMusage
 
-NASM Usage is a small collection of x86-64 assembly examples for Windows. It demonstrates basic NASM syntax, Windows x64 calling conventions, linking with C runtime functions, and simple console rendering.
+NASMusage is a Windows x86-64 learning repo for combining NASM assembly with C. The main project is a small TCP networking probe: C handles Winsock networking, while NASM routines process the received bytes with low-level buffer operations.
 
-## Included Examples
+## What This Demonstrates
 
-- `hello.asm` prints a message using `printf`
-- `snake.asm` renders a simple console snake-style board using Windows console APIs
+- Windows x64 calling convention between C and NASM
+- Building NASM object files and linking them with C
+- Winsock TCP connection setup from C
+- Passing network buffers into assembly routines
+- Byte-level checksum, byte counting, and in-place ASCII transformation in NASM
+- Cleaner project structure for small mixed-language systems programs
 
-## Concepts Covered
+## Project Layout
 
-- NASM source structure with `.data` and `.text` sections
-- Windows x64 shadow space and calling convention basics
-- Calling external C functions such as `printf`
-- Calling Windows console functions such as `GetStdHandle` and `SetConsoleCursorPosition`
-- Basic keyboard polling through `_kbhit` and `_getch`
-- Simple game-loop rendering in assembly
+```text
+include/
+  net_asm.h              C declarations for NASM routines
+
+src/
+  tcp_probe.c            Winsock TCP client demo
+  net_asm.asm            Assembly helper routines used by the client
+
+examples/
+  hello.asm              Minimal printf example
+  console_grid.asm       Windows console rendering demo
+
+build.ps1                PowerShell build script
+build.bat                Batch build script
+LICENSE                  GPL-3.0 license
+```
 
 ## Requirements
 
 - Windows
 - NASM
-- GCC or another linker toolchain that can link against the C runtime and Windows system libraries
+- GCC/MinGW-w64 or another C compiler that can link with Winsock
+
+Make sure both `nasm` and `gcc` are available on your `PATH`.
 
 ## Build
 
-Build the hello-world example:
+Using PowerShell:
 
 ```powershell
-nasm -f win64 hello.asm -o hello.obj
-gcc hello.obj -o hello.exe
+.\build.ps1
 ```
 
-Build the snake demo:
+Using Command Prompt:
+
+```bat
+build.bat
+```
+
+Manual build command:
 
 ```powershell
-nasm -f win64 snake.asm -o snake.obj
-gcc snake.obj -o snake.exe -lkernel32 -lmsvcrt
+nasm -f win64 src\net_asm.asm -o build\net_asm.obj
+gcc src\tcp_probe.c build\net_asm.obj -Iinclude -lws2_32 -o build\tcp_probe.exe
 ```
 
 ## Run
 
+Default target:
+
 ```powershell
-.\hello.exe
-.\snake.exe
+.\build\tcp_probe.exe
+```
+
+Custom host, port, and path:
+
+```powershell
+.\build\tcp_probe.exe example.com 80 /
+```
+
+The program sends an HTTP `HEAD` request, receives the first response chunk, and then calls NASM routines to:
+
+- calculate a 32-bit additive checksum
+- count newline bytes
+- uppercase the response preview in place
+
+## Assembly API
+
+The C program calls these NASM functions:
+
+```c
+uint32_t asm_checksum32(const uint8_t *buffer, size_t length);
+size_t asm_count_byte(const uint8_t *buffer, size_t length, uint8_t value);
+void asm_uppercase_ascii(char *buffer, size_t length);
+```
+
+These functions follow the Windows x64 ABI:
+
+- `RCX`, `RDX`, `R8`, and `R9` hold the first four integer or pointer arguments
+- `RAX` holds the return value
+- caller-saved registers may be overwritten
+
+## Extra Examples
+
+Build the hello example:
+
+```powershell
+nasm -f win64 examples\hello.asm -o build\hello.obj
+gcc build\hello.obj -o build\hello.exe
+```
+
+Build the console grid example:
+
+```powershell
+nasm -f win64 examples\console_grid.asm -o build\console_grid.obj
+gcc build\console_grid.obj -o build\console_grid.exe -lkernel32 -lmsvcrt
 ```
 
 ## Notes
 
-This repository is intended as a learning reference for low-level programming. The snake example is a simple rendering and movement demo rather than a complete game.
+This repo is intentionally small and educational. The networking code is kept in C because Winsock setup is clearer there; the assembly focuses on data-processing routines where register usage, pointer arithmetic, and ABI details are easier to study.
 
 ## License
 
