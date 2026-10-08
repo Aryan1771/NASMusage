@@ -1,6 +1,6 @@
 # NASMusage
 
-NASMusage is a Windows x86-64 learning repo for combining NASM assembly with C. The main project is a small TCP networking probe: C handles Winsock networking, while NASM routines process the received bytes with low-level buffer operations.
+NASMusage is a Windows x86-64 educational repository for combining NASM assembly with C. The main project is a small TCP networking probe: C handles Winsock networking, while NASM routines process the received bytes with low-level buffer operations.
 
 ## What This Demonstrates
 
@@ -9,7 +9,7 @@ NASMusage is a Windows x86-64 learning repo for combining NASM assembly with C. 
 - Winsock TCP connection setup from C
 - Passing network buffers into assembly routines
 - Byte-level checksum, byte counting, and in-place ASCII transformation in NASM
-- Cleaner project structure for small mixed-language systems programs
+- A compact, separated C and assembly codebase
 
 ## Project Layout
 
@@ -55,6 +55,7 @@ build.bat
 Manual build command:
 
 ```powershell
+New-Item -ItemType Directory -Force build | Out-Null
 nasm -f win64 src\net_asm.asm -o build\net_asm.obj
 gcc src\tcp_probe.c build\net_asm.obj -Iinclude -lws2_32 -o build\tcp_probe.exe
 ```
@@ -95,7 +96,9 @@ These functions follow the Windows x64 ABI:
 - `RAX` holds the return value
 - caller-saved registers may be overwritten
 
-## Extra Examples
+## Additional examples
+
+Create the `build/` directory first using the build steps above.
 
 Build the hello example:
 
